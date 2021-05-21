@@ -1,0 +1,79 @@
+version: '3.3'
+services:
+  app:
+    restart: always
+    build: ./config/7
+    container_name: PHP-7
+    working_dir: /var/www/
+    volumes:
+      - ./www:/var/www
+      #- ./custom.ini:/usr/local/etc/php/conf.d/custom.ini
+    links:
+      - db
+  
+  php:
+    restart: always
+    container_name: PHP-8
+    build: ./config/8
+    volumes:
+      - ./www:/var/www
+    #ini file
+    #- ./custom.ini:/usr/local/etc/php/conf.d/custom.ini 
+    links:
+      - db
+
+    # Nginx service
+  nginx7:
+    image: nginx:latest
+    restart: always
+    container_name: NGINX-7
+    ports:
+      - 8000:8000
+    volumes:
+      - ./www:/var/www
+      - ./config/7/nginx/conf.d/:/etc/nginx/conf.d/
+    #networks:
+    #    - app-network
+    links:
+      - app
+    depends_on:
+    - app
+    - db
+      
+  nginx8:
+    image: nginx:latest
+    container_name: NGINX-8
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./www:/var/www
+      - ./config/8/nginx/conf.d/:/etc/nginx/conf.d/
+    links:
+      - php
+    depends_on:
+      - php
+      - db
+
+  cli:
+    container_name: WP-CLI8
+    image: wordpress:cli
+    volumes:
+    - ./www:/var/www/html/
+
+  # MySQL database service
+  db:
+    container_name: mysql
+    image: mysql:5.7
+    restart: always
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: root
+      MYSQL_PASSWORD:
+    volumes:
+      - ./mysql:/var/lib/mysql
+volumes:
+  mysql: {}
